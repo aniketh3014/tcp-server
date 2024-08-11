@@ -9,12 +9,14 @@ type Server struct {
 	listenAddr string
 	listener   net.Listener
 	quitchan   chan struct{}
+	magchan    chan []byte
 }
 
 func NewServer(listenAddr string) *Server {
 	return &Server{
 		listenAddr: listenAddr,
 		quitchan:   make(chan struct{}),
+		magchan:    make(chan []byte, 10),
 	}
 }
 
@@ -30,6 +32,7 @@ func (s *Server) start() error {
 	go s.acceptLoop()
 
 	<-s.quitchan
+	close(s.magchan)
 	return nil
 }
 
@@ -55,12 +58,18 @@ func (s *Server) readLoop(conn net.Conn) {
 			fmt.Println("Error reading messege", err)
 			continue
 		}
-		msg := buf[:n]
-		fmt.Println(string(msg))
+
+		s.magchan <- buf[:n]
 	}
 }
 
 func main() {
-	sever := NewServer(":8080")
-	sever.start()
+	server := NewServer(":8080")
+	go func() {
+		for msg := range server.magchan {
+			fmt.Println("message recived from connection: ", string(msg))
+		}
+	}()
+
+	server.start()
 }
