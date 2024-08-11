@@ -60,6 +60,8 @@ func (s *Server) readLoop(conn net.Conn) {
 		}
 
 		s.magchan <- buf[:n]
+
+		conn.Write([]byte("Thank you for your message!"))
 	}
 }
 
@@ -67,7 +69,7 @@ func main() {
 	server := NewServer(":8080")
 	go func() {
 		for msg := range server.magchan {
-			fmt.Println("message recived from connection: ", string(msg))
+			fmt.Println("message recived from connection:", string(msg))
 		}
 	}()
 
